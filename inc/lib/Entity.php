@@ -1,0 +1,64 @@
+<?php
+class Entity{
+    public
+    
+    
+    $con,$sqlData;
+    public function __construct($con,$input){
+        $this->con=$con;
+        if(is_array($input)){
+            $this->sqlData=$input;
+        }else{
+            $sql="SELECT * FROM entities WHERE id=:id";
+            $query=$this->con->prepare($sql);
+            $query->bindValue(":id", $input);
+            $query->execute();
+            $this->sqlData = $query->fetch(PDO::FETCH_ASSOC);
+        }
+    }
+    public function getId (){
+        return $this->sqlData["id"];
+    }
+    public function getName (){
+        return $this->sqlData["name"];
+    }
+    public function getThumbnail (){
+        return $this->sqlData["thumbnail"];
+    }
+    public function getPreview (){
+        return $this->sqlData["preview"];
+    }
+    public function getCategoryId (){
+        return $this->sqlData["categoryId"];
+    }
+
+    ///////////not yet
+    public function getSeasons (){
+        $sql="SELECT * FROM videos WHERE entityId=:id
+              AND isMovie=0 ORDER BY season, episode ASC";
+        $sql=$this->con->prepare($sql);
+        $sql->bindValue(':id',$this->getId());
+        $sql->execute();
+        $seasons = array();
+        $videos = array();
+        $currentSeason = null;
+        while($row = $sql->fetch(PDO::FETCH_ASSOC)) {
+            
+            if($currentSeason != null && $currentSeason != $row["season"]) {
+                $seasons[] = new Season($currentSeason, $videos);
+                $videos = array();
+            }
+            
+            $currentSeason = $row["season"];
+            $videos[] = new Video($this->con, $row);
+             
+        }
+
+        if(sizeof($videos) != 0) {
+            $seasons[] = new Season($currentSeason, $videos);
+        }
+
+        return $seasons;
+    }
+}
+?>
